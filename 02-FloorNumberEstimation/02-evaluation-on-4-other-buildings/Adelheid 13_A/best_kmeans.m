@@ -17,7 +17,7 @@ dim=size(X);
 test_num=10;
 distortion=zeros(dim(1),1);
 
-for k_temp=1:70
+for k_temp=1:100
     [~,~,sumd]=kmeans(X,k_temp,'emptyaction','drop');
     destortion_temp=sum(sumd);
     % try differnet tests to find minimun disortion under k_temp clusters

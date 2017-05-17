@@ -1,4 +1,4 @@
-function [IDX,C,SUMD,K,distort]=best_kmeans(X)
+function [IDX,C,SUMD,K,r]=best_kmeans(X)
 
 % [IDX,C,SUMD,K] = best_kmeans(X) partitions the points in the N-by-P data matrix X
 % into K clusters. Rows of X correspond to points, columns correspond to variables. 
@@ -17,7 +17,7 @@ dim=size(X);
 test_num=10;
 distortion=zeros(dim(1),1);
 
-for k_temp=1:70
+for k_temp=1:100
     [~,~,sumd]=kmeans(X,k_temp,'emptyaction','drop');
     destortion_temp=sum(sumd);
     % try differnet tests to find minimun disortion under k_temp clusters
@@ -31,14 +31,13 @@ end
 variance=distortion(1:end-1)-distortion(2:end);
 distortion_percent=cumsum(variance)/(distortion(1)-distortion(end));
 
-distort=distortion_percent(1:9)*100;
-
 figure
 hold on
 plot(distortion_percent(1:9)*100,'b*--');
 hold off
 
-[r,~]=find(distortion_percent>0.995);
+[r,~]=find(distortion_percent>0.987);
+
 K=r(1,1)+1;
 [IDX,C,SUMD]=kmeans(X,K);
 
