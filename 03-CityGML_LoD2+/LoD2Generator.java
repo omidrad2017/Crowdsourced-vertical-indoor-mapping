@@ -1,3 +1,9 @@
+// Create a MySQL schema in the MySQL workbench called e.g. lod0, then create a table of building 
+// footprint vertices called e.g. building_footprint by importing Footprint.csv file to this schema(right click
+// on the Tables, then choose Table data import wizard). (refresh to see the table!). You should
+// set username as 'root' and port number as '3306' from 'Database\Connect to database' menu. Also set this schema as default by right click on it.
+
+
 import java.awt.Point;
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -44,99 +50,89 @@ import org.citygml4j.xml.io.CityGMLOutputFactory;
 import org.citygml4j.xml.io.writer.CityGMLWriter;
 import java.sql.*;
 
-
 public class LoD1Generator {
 	public static void main (String[]args ) throws Exception{
 		new LoD1Generator().doMain();
 		
 	}
-	
-		
-	public void doMain() throws Exception {
-		SimpleDateFormat df = new SimpleDateFormat("[HH:mm:ss] "); 
 
+	public void doMain() throws Exception {
+		
+		SimpleDateFormat df = new SimpleDateFormat("[HH:mm:ss] "); 
 		System.out.println(df.format(new Date()) + "setting up citygml4j context and JAXB builder");
 		CityGMLContext ctx = new CityGMLContext();
 		CityGMLBuilder builder = ctx.createCityGMLBuilder();
-
-		System.out.println(df.format(new Date()) + "creating LOD1 building as citygml4j in-memory object tree");
+		System.out.println(df.format(new Date()) + "creating LOD2 building as citygml4j in-memory object tree");
 		GMLGeometryFactory geom = new GMLGeometryFactory();
 		JAXBBuilder builder2 = ctx.createJAXBBuilder();
-		
-		System.out.println(df.format(new Date()) + "creating LOD1 building as citygml4j in-memory object tree");
+		System.out.println(df.format(new Date()) + "creating LOD2 building as citygml4j in-memory object tree");
 		GMLGeometryFactory geom2 = new GMLGeometryFactory();
-		
-
 		GMLIdManager gmlIdManager = DefaultGMLIdManager.getInstance();
-
 		Building building = new Building();
+		
         // for ground
 		List<Double> lst = new ArrayList<Double>();
 		
 		int count = 0; // counts number of vertices of footprint
 		
-         try{
-			
+        try{
 			
 			// 1. get connection to database
-			// note: demo is name of database in mysql- student is username and password- 3306 is port number
+			// note: lod0 is name of schema in mysql. 'student' is username and password is '3306' 
 			Connection myConn = DriverManager.getConnection("jdbc:Mysql://localhost:3306/lod0?useSSL=false","root","student");
 			// 2. create a statement
-					Statement myStmt = myConn.createStatement();
+		    Statement myStmt = myConn.createStatement();
 			// 3. execute a sql query
-					ResultSet myRs = myStmt.executeQuery("select * from building_footprint");
+			ResultSet myRs = myStmt.executeQuery("select * from building_footprint");
 			// 4. process the result set
 					
-					
-					 
-					while (myRs.next()){
-						double x = myRs.getDouble("x");
-						double y = myRs.getDouble("y");
-						double z = 0;
-						lst.add(x);
-						lst.add(y);
-						lst.add(z);
-						  count++;
-					}
-					
+		 while (myRs.next()){
+			double x = myRs.getDouble("x");
+			double y = myRs.getDouble("y");
+			double z = 0;
+			lst.add(x);
+			lst.add(y);
+			lst.add(z);
+			count++;
+			}	
+		 
 		}
+        
          catch (Exception exc){
  			exc.printStackTrace();
- 		
  		}
+        
          double[] myArrayForGround = new double[lst.size()];
          for (int i = 0; i < lst.size(); i++) {
         	   myArrayForGround[i] = lst.get(i);
-        	   System.out.println(myArrayForGround[i]);
-        	   
+        	   System.out.println(myArrayForGround[i]);  
         	}
          System.out.println(myArrayForGround);
 		
-		Polygon ground = geom.createLinearPolygon(myArrayForGround,3);
+		 Polygon ground = geom.createLinearPolygon(myArrayForGround,3);
 		
 		// adding height value to ground vertices
-		double[] myArrayForRoof = new double[lst.size()];
-		for (int i =0; i< lst.size(); i++)
-		myArrayForRoof[i] = myArrayForGround[i];
-	
-		for (int i =2; i< lst.size(); i+=3){
+		 double[] myArrayForRoof = new double[lst.size()];
+		 for (int i =0; i< lst.size(); i++)
+		 myArrayForRoof[i] = myArrayForGround[i];
+		 for (int i =2; i< lst.size(); i+=3){
 			
 			myArrayForRoof[i]+=12;		
 		}
 		
-for (int i =0; i< lst.size(); i++){
+        for (int i =0; i< lst.size(); i++){
 			
-	System.out.println(myArrayForRoof[i]);	
-			
+	       System.out.println(myArrayForRoof[i]);	
+		
 		}
 
 		Polygon roof = geom.createLinearPolygon(myArrayForRoof,3);
 		
-		// Assume number of floors are calculated from the classification algorithm
-		// Assume we calculated each floor height
+		// Assume number of floors are calculated from the elbow algorithm
+		// Assume we calculated each floor height as well
 		
-		int num_of_floors = 4;
-		int [] floor_heights = {3,3,3,3};
+		int num_of_floors = 2;
+		int [] floor_heights = {3};
 		
 		List<Polygon> floors = new ArrayList<Polygon>();
 		Polygon f = geom.createLinearPolygon(myArrayForRoof,3);
@@ -150,41 +146,35 @@ for (int i =0; i< lst.size(); i++){
 			myArrayForRoof[i]+=floor_heights[0];		
 		}
 		Polygon floor_1 = geom.createLinearPolygon(myArrayForRoof,3);
-		
-		
-		
-		
-		
-		
-		
 		List<Polygon> walls = new ArrayList<Polygon>();
         
-        //--------walls---------------
+        // Walls
 		
 		//lst.size()/3
 		
         int k=0;
         for (int i=0; i<lst.size()/3; i++){
-       	 walls.add(geom.createLinearPolygon(new double[] {
+        	
+            walls.add(geom.createLinearPolygon(new double[] {
+            			 
        			 myArrayForGround[k],myArrayForGround[k+1], myArrayForGround[k+2], 
        			 myArrayForGround[k+3],myArrayForGround[k+4], myArrayForGround[k+5],
        			 myArrayForGround[k+3],myArrayForGround[k+4], myArrayForGround[k+5]+12,
        			 myArrayForGround[k],myArrayForGround[k+1], myArrayForGround[k+2]+12,
        			 myArrayForGround[k],myArrayForGround[k+1], myArrayForGround[k+2]},3));
-      if (k+3 <lst.size()-3)
-       			k+=3;
-        }
-        
+       	 
+                 if (k+3 <lst.size()-3)
+       			    k+=3;
+            }
         
         System.out.println(walls.size());
+        
         for (int i=0; i<walls.size(); i++){
        	 walls.get(i).setId(gmlIdManager.generateUUID());
         }
         
-        
 	
-        //----------------------------
-		
+        // End walls
 		
 		ground.setId(gmlIdManager.generateUUID());
 		roof.setId(gmlIdManager.generateUUID());
@@ -198,82 +188,70 @@ for (int i =0; i< lst.size(); i++){
 			surfaceMember.add(new SurfaceProperty('#' + walls.get(i).getId()));
 	        }
 		
-		// Assume an I/O detected at wall number 1
+		// Assume an OI transition detected at wall number 1
 		int I_O = 1;
+		
 		BoundarySurfaceProperty wall_1_BSurf = createBoundarySurface(CityGMLClass.BUILDING_WALL_SURFACE, walls.get(I_O));		
 		createDoor(wall_1_BSurf);	
-		
-		
-		
-		
 		CompositeSurface compositeSurface = new CompositeSurface();
 		compositeSurface.setSurfaceMember(surfaceMember);		
 		Solid solid = new Solid();
 		solid.setExterior(new SurfaceProperty(compositeSurface));
-
 		building.setLod4Solid(new SolidProperty(solid));
 		
 		// thematic boundary surfaces
-				List<BoundarySurfaceProperty> boundedBy = new ArrayList<BoundarySurfaceProperty>();
-				boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_GROUND_SURFACE, ground));
-				boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_ROOF_SURFACE, roof));
-				boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_FLOOR_SURFACE, floor_1));
-				boundedBy.add(wall_1_BSurf);
-				for (int i=0; i<walls.size(); i++){
-					boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_WALL_SURFACE, walls.get(i)));
-			        }
+		
+		List<BoundarySurfaceProperty> boundedBy = new ArrayList<BoundarySurfaceProperty>();
+		boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_GROUND_SURFACE, ground));
+		boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_ROOF_SURFACE, roof));
+		boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_FLOOR_SURFACE, floor_1));
+		boundedBy.add(wall_1_BSurf);
+		
+		for (int i=0; i<walls.size(); i++){
+		boundedBy.add(createBoundarySurface(CityGMLClass.BUILDING_WALL_SURFACE, walls.get(i)));
+	    }
 				
-				building.setBoundedBySurface(boundedBy);
-
-				CityModel cityModel = new CityModel();
-				cityModel.setBoundedBy(building.calcBoundedBy(false));
-				cityModel.addCityObjectMember(new CityObjectMember(building));
-
-				System.out.println(df.format(new Date()) + "writing citygml4j object tree");
-				CityGMLOutputFactory out = builder.createCityGMLOutputFactory(CityGMLVersion.DEFAULT);
-				CityGMLWriter writer = out.createCityGMLWriter(new File("LoD1Generated.gml"));
-
-				writer.setPrefixes(CityGMLVersion.DEFAULT);
-				writer.setSchemaLocations(CityGMLVersion.DEFAULT);
-				writer.setIndentString("  ");
-				writer.write(cityModel);
-				writer.close();	
-				
-				System.out.println(df.format(new Date()) + "CityGML file LOD0Generated.gml written");
-				System.out.println(df.format(new Date()) + "sample citygml4j application successfully finished");
+	    building.setBoundedBySurface(boundedBy);
+		CityModel cityModel = new CityModel();
+		cityModel.setBoundedBy(building.calcBoundedBy(false));
+		cityModel.addCityObjectMember(new CityObjectMember(building));
+		System.out.println(df.format(new Date()) + "writing citygml4j object tree");
+		CityGMLOutputFactory out = builder.createCityGMLOutputFactory(CityGMLVersion.DEFAULT);
+		CityGMLWriter writer = out.createCityGMLWriter(new File("LoD2Generated.gml"));
+		writer.setPrefixes(CityGMLVersion.DEFAULT);
+		writer.setSchemaLocations(CityGMLVersion.DEFAULT);
+		writer.setIndentString("  ");
+		writer.write(cityModel);
+		writer.close();	
+		System.out.println(df.format(new Date()) + "CityGML file LOD0Generated.gml written");
+		System.out.println(df.format(new Date()) + "sample citygml4j application successfully finished");
 				
 	}
+	
+	
 	
 	public void createDoor(BoundarySurfaceProperty bsp) throws DimensionMismatchException {
 		System.out.println("c");
 		AbstractBoundarySurface b = bsp.getBoundarySurface();
 		if (b instanceof WallSurface) {
 			System.out.println("IS wall surf");
-			
 			GMLGeometryFactory geom = new GMLGeometryFactory();
-			
 			WallSurface ws = (WallSurface) b;
-			
 			Door door = new Door();
-			
 			OpeningProperty openingProperty = new OpeningProperty();			
 			openingProperty.setObject(door);			
-			
-			
-			
-			
 			Polygon doorPoly= geom.createLinearPolygon(new double[] {-3.5,0.1,0, -6.5,0.1,0, -6.5,0.1,2.3, -3.5,0.1,2.3, -3.5,0.1,0}, 3);
 			Polygon doorPoly2 = geom.createLinearPolygon(new double[] {-3.5,-0.1,0, -6.5,-0.1,0, -6.5,-0.1,2.3, -3.5,-0.1,2.3, -3.5,-0.1,0}, 3);
 			List l = new ArrayList();
 			l.add(doorPoly);
 			l.add(doorPoly2);
-			
 			//door.setLod4MultiSurface(gml.createMultiSurfaceProperty(gml.createMultiSurface(doorPoly)));
 			door.setLod4MultiSurface(new MultiSurfaceProperty(new MultiSurface(l)));
-			
 			ws.addOpening(openingProperty);
 		}				
 	}
+	
+	
 	        
 	private BoundarySurfaceProperty createBoundarySurface(CityGMLClass type, Polygon geometry) {
 		AbstractBoundarySurface boundarySurface = null;
