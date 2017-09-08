@@ -1,0 +1,10 @@
+To perform a sensor fusion on light, GPS and mgnetic field sensors, run each folder consequently in this way:
+
+1. Light
+2. GPS
+3. Magnetic
+4. Light_GPS_Fusion
+5. Light-GPS-Magnetic-Fusion
+
+After running all the Matlab files, you will get final fusion result as a step function
+(similar to a binary classification) of indoor and outdoor areas
