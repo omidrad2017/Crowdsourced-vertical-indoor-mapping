@@ -1,0 +1,4 @@
+This data file contains geolocation uncertainty for 4 buildings.
+
+Scenario: I visited 4 neighboring buildings continuously. As a result, you should be able to see 4 squares in the 
+binarry classification result.
