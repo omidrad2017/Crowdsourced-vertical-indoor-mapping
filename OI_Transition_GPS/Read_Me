@@ -1,0 +1,6 @@
+To perform binary classification of GPS Uncertainty, select any of the geolocation csv files from the folders
+and execute the MATLAB code OITransition_Geolocation.m
+
+Each folder is from data I collected from a specific building.
+
+Note: Please make sure during execution of the code, you have only one *.csv file in the main folder.
