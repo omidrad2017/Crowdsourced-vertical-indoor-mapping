@@ -1,5 +1,7 @@
+OITransitionGPS.m function is for identification of indoor and outdoor parts of the Geolocation uncertainty signal.
+
 To perform binary classification of GPS Uncertainty, please select any of the Geolocation csv files from the folders
-and execute the MATLAB code OITransition_Geolocation.m
+and execute the MATLAB code OITransitionGPS.m. Please also read the cntent of this file.
 
 Each folder is from data I collected from a specific building.
 
